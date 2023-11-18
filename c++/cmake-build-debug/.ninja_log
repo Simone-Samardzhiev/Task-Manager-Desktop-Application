@@ -1,0 +1,56 @@
+# ninja log v5
+328	3476	1698760779801030384	CMakeFiles/c__.dir/main.cpp.o	75d67c9b7f423945
+3476	3912	1698760780233034717	c__	d88e1bd64fa2c646
+3	325	1698760776648998772	/home/simone/Desktop/My projects/Task Manager Desktop Application/c++/cmake-build-debug/c___autogen/mocs_compilation.cpp	3def545d6c2f836d
+43	72	1698525826580901357	CMakeFiles/c__.dir/c___autogen/mocs_compilation.cpp.o	ddc52d9020cbf508
+3	325	1698760776648998772	c___autogen/mocs_compilation.cpp	3def545d6c2f836d
+3	325	1698760776648998772	/home/simone/Desktop/My projects/Task Manager Desktop Application/c++/cmake-build-debug/c___autogen/timestamp	3def545d6c2f836d
+3	325	1698760776648998772	c___autogen/timestamp	3def545d6c2f836d
+4	408	1698761326770674274	c___autogen/timestamp	3def545d6c2f836d
+4	408	1698761326770674274	c___autogen/mocs_compilation.cpp	3def545d6c2f836d
+4	408	1698761326770674274	/home/simone/Desktop/My projects/Task Manager Desktop Application/c++/cmake-build-debug/c___autogen/timestamp	3def545d6c2f836d
+4	408	1698761326770674274	/home/simone/Desktop/My projects/Task Manager Desktop Application/c++/cmake-build-debug/c___autogen/mocs_compilation.cpp	3def545d6c2f836d
+411	4704	1698761331062719432	CMakeFiles/c__.dir/main.cpp.o	75d67c9b7f423945
+4704	5402	1698761331758726756	c__	d88e1bd64fa2c646
+2	251	1698761579773349566	c___autogen/timestamp	3def545d6c2f836d
+2	251	1698761579773349566	c___autogen/mocs_compilation.cpp	3def545d6c2f836d
+2	251	1698761579773349566	/home/simone/Desktop/My projects/Task Manager Desktop Application/c++/cmake-build-debug/c___autogen/timestamp	3def545d6c2f836d
+2	251	1698761579773349566	/home/simone/Desktop/My projects/Task Manager Desktop Application/c++/cmake-build-debug/c___autogen/mocs_compilation.cpp	3def545d6c2f836d
+252	2834	1698761582353376967	CMakeFiles/c__.dir/main.cpp.o	75d67c9b7f423945
+2834	3264	1698761582781381513	c__	d88e1bd64fa2c646
+3	368	1698762147324073156	c___autogen/timestamp	3def545d6c2f836d
+3	368	1698762147324073156	c___autogen/mocs_compilation.cpp	3def545d6c2f836d
+3	368	1698762147324073156	/home/simone/Desktop/My projects/Task Manager Desktop Application/c++/cmake-build-debug/c___autogen/timestamp	3def545d6c2f836d
+3	368	1698762147324073156	/home/simone/Desktop/My projects/Task Manager Desktop Application/c++/cmake-build-debug/c___autogen/mocs_compilation.cpp	3def545d6c2f836d
+370	4039	1698762150995443536	CMakeFiles/c__.dir/main.cpp.o	75d67c9b7f423945
+4039	4521	1698762151471361537	c__	d88e1bd64fa2c646
+3	404	1698762296797604024	c___autogen/timestamp	3def545d6c2f836d
+3	404	1698762296797604024	c___autogen/mocs_compilation.cpp	3def545d6c2f836d
+3	404	1698762296797604024	/home/simone/Desktop/My projects/Task Manager Desktop Application/c++/cmake-build-debug/c___autogen/timestamp	3def545d6c2f836d
+3	404	1698762296797604024	/home/simone/Desktop/My projects/Task Manager Desktop Application/c++/cmake-build-debug/c___autogen/mocs_compilation.cpp	3def545d6c2f836d
+406	4937	1698762301329875497	CMakeFiles/c__.dir/main.cpp.o	75d67c9b7f423945
+4937	5605	1698762301989911146	c__	d88e1bd64fa2c646
+1	244	1698762492761031261	c___autogen/timestamp	3def545d6c2f836d
+1	244	1698762492761031261	c___autogen/mocs_compilation.cpp	3def545d6c2f836d
+1	244	1698762492761031261	/home/simone/Desktop/My projects/Task Manager Desktop Application/c++/cmake-build-debug/c___autogen/timestamp	3def545d6c2f836d
+1	244	1698762492761031261	/home/simone/Desktop/My projects/Task Manager Desktop Application/c++/cmake-build-debug/c___autogen/mocs_compilation.cpp	3def545d6c2f836d
+246	3394	1698762495905329327	CMakeFiles/c__.dir/main.cpp.o	75d67c9b7f423945
+3394	3891	1698762496397374737	c__	d88e1bd64fa2c646
+2	292	1698790017532877919	c___autogen/timestamp	3def545d6c2f836d
+2	292	1698790017532877919	c___autogen/mocs_compilation.cpp	3def545d6c2f836d
+2	292	1698790017532877919	/home/simone/Desktop/My projects/Task Manager Desktop Application/c++/cmake-build-debug/c___autogen/timestamp	3def545d6c2f836d
+2	292	1698790017532877919	/home/simone/Desktop/My projects/Task Manager Desktop Application/c++/cmake-build-debug/c___autogen/mocs_compilation.cpp	3def545d6c2f836d
+294	3076	1698790020316881569	CMakeFiles/c__.dir/main.cpp.o	75d67c9b7f423945
+3077	3508	1698790020744882131	c__	d88e1bd64fa2c646
+3	336	1698790224309149041	c___autogen/timestamp	3def545d6c2f836d
+3	336	1698790224309149041	c___autogen/mocs_compilation.cpp	3def545d6c2f836d
+3	336	1698790224309149041	/home/simone/Desktop/My projects/Task Manager Desktop Application/c++/cmake-build-debug/c___autogen/timestamp	3def545d6c2f836d
+3	336	1698790224309149041	/home/simone/Desktop/My projects/Task Manager Desktop Application/c++/cmake-build-debug/c___autogen/mocs_compilation.cpp	3def545d6c2f836d
+338	3765	1698790227733153531	CMakeFiles/c__.dir/main.cpp.o	75d67c9b7f423945
+3765	4160	1698790228125154044	c__	d88e1bd64fa2c646
+1	210	1698790262305198860	c___autogen/timestamp	3def545d6c2f836d
+1	210	1698790262305198860	c___autogen/mocs_compilation.cpp	3def545d6c2f836d
+1	210	1698790262305198860	/home/simone/Desktop/My projects/Task Manager Desktop Application/c++/cmake-build-debug/c___autogen/timestamp	3def545d6c2f836d
+1	210	1698790262305198860	/home/simone/Desktop/My projects/Task Manager Desktop Application/c++/cmake-build-debug/c___autogen/mocs_compilation.cpp	3def545d6c2f836d
+211	2595	1698790264689201986	CMakeFiles/c__.dir/main.cpp.o	75d67c9b7f423945
+2595	3006	1698790265097202521	c__	d88e1bd64fa2c646
