@@ -1,5 +1,0 @@
-/home/simone/Desktop/My projects/Task Manager Desktop Application/c++/cmake-build-debug/CMakeFiles/c__.dir
-/home/simone/Desktop/My projects/Task Manager Desktop Application/c++/cmake-build-debug/CMakeFiles/edit_cache.dir
-/home/simone/Desktop/My projects/Task Manager Desktop Application/c++/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/home/simone/Desktop/My projects/Task Manager Desktop Application/c++/cmake-build-debug/CMakeFiles/c___autogen_timestamp_deps.dir
-/home/simone/Desktop/My projects/Task Manager Desktop Application/c++/cmake-build-debug/CMakeFiles/c___autogen.dir
