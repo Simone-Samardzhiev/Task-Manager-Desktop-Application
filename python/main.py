@@ -1,158 +1,279 @@
 import json
+import mysql.connector
 import sys
+from datetime import datetime
 from functools import partial
 
 from PyQt6.QtGui import QCloseEvent
-from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QLineEdit, QGridLayout, QFrame, QComboBox
+from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QLineEdit, QGridLayout, QComboBox, QMessageBox
 
 
 class Data:
-    data: list[dict]
+    tasks: list[dict] = []
+    username: str
+    password: str
 
     def __init__(self) -> None:
-        self.read_data()
+        self.get_login_info()
+        self.retrieve_data()
 
-    def read_data(self) -> None:
-        with open("/Users/simonesamardzhiev/Desktop/My projects/Task Manager/python/data.json", "r") as file:
-            self.data = json.load(file)
+    def get_login_info(self) -> None:
+        with open("login_info.json", "r") as file:
+            data = json.load(file)
+            self.username = data["username"]
+            self.password = data["password"]
 
-    def write_data(self) -> None:
-        with open("/Users/simonesamardzhiev/Desktop/My projects/Task Manager/python/data.json", "w") as file:
-            json.dump(self.data, file, indent=4)
+    def retrieve_data(self) -> None:
+        connection = None
+        cursor = None
 
-    def reindex(self) -> None:
-        for i in range(len(self.data)):
-            self.data[i]['id'] = i
-
-    def get_id(self) -> int:
         try:
-            return self.data[-1]['id'] + 1
+            connection = mysql.connector.connect(host="localhost", user=self.username,
+                                                 password=self.password, database="TaskManager")
+            cursor = connection.cursor()
+            query = "SELECT * FROM PythonData"
+            cursor.execute(query)
+            data = cursor.fetchall()
+
+            for row in data:
+                task = {
+                    "id": row[0],
+                    "task": row[1],
+                    "date": row[2],
+                    "importance": row[3]
+                }
+                self.tasks.append(task)
+
+        except mysql.connector.Error as err:
+            print("Error while trying to get data ", err)
+            sys.exit(1)
+        finally:
+            if connection is not None:
+                cursor.close()
+            if cursor is not None:
+                connection.close()
+
+    def save_data(self) -> None:
+        connection = None
+        cursor = None
+        try:
+            connection = mysql.connector.connect(host="localhost", user=self.username,
+                                                 password=self.password, database="TaskManager")
+            cursor = connection.cursor()
+            query = "DELETE FROM PythonData"
+            cursor.execute(query)
+
+            for task in self.tasks:
+                query = "INSERT INTO PythonData(task, date, importance) VALUES (%s, %s, %s)"
+                cursor.execute(query, (task["task"], task["date"], task["importance"]))
+
+            connection.commit()
+
+        except mysql.connector.Error as err:
+            print("Error while trying to save the data ", err)
+            sys.exit(1)
+        finally:
+            if connection is not None:
+                connection.close()
+            if cursor is not None:
+                cursor.close()
+
+    def delete_task(self, _id: int) -> None:
+        for task in self.tasks:
+            if task["id"] == _id:
+                self.tasks.remove(task)
+
+    def add_task(self, task: str, date: datetime, importance: str) -> None:
+        task = {
+            "id": self.get_new_id(),
+            "task": task,
+            "date": date,
+            "importance": importance
+        }
+
+        self.tasks.append(task)
+
+    def get_new_id(self) -> int:
+        try:
+            return self.tasks[-1]["id"] + 1
         except IndexError:
             return 0
 
-    def add_task(self, name: str, date: str, importance: str) -> None:
-        self.data.append({
-            'name': name,
-            'date': date,
-            'importance': importance,
-            'id': self.get_id()
-        })
-
-    def delete_task(self, _id: int) -> None:
-        for task in self.data:
-            if task['id'] == _id:
-                self.data.remove(task)
-                break
-
     def __iter__(self) -> dict:
-        for task in self.data:
+        for task in self.tasks:
             yield task
 
 
-class AddWindow(QWidget):
+class NewTaskWindow(QWidget):
+    window: "Window"
+    data: Data
     nameLineEdit: QLineEdit
     dateLineEdit: QLineEdit
-    importanceChoice: QComboBox
+    importanceOptions: QComboBox
 
-    def __init__(self, wnd: "Window") -> None:
+    def __init__(self, wnd: "Window", data: Data) -> None:
         super().__init__()
-        self.setWindowTitle("New task")
-        self.setGeometry(300, 300, 400, 400)
 
+        # setting attributes to the window
+        self.setWindowTitle("New Task")
+        self.setGeometry(250, 250, 300, 300)
+
+        # passing the arguments
         self.window = wnd
+        self.data = data
+
+        # creating the widgets
+        layout = QGridLayout()
         self.nameLineEdit = QLineEdit()
         self.dateLineEdit = QLineEdit()
-        self.importanceChoice = QComboBox()
-        button = QPushButton("Add")
-        button.clicked.connect(self.on_button_clicked)
+        self.importanceOptions = QComboBox()
+        button_add = QPushButton("Add task")
 
-        self.importanceChoice.addItems(["Not important", "Important", "Must"])
+        # connecting the widgets and setting attributes
+        for importance in ["Not important", "Important", "Must"]:
+            self.importanceOptions.addItem(importance)
+        button_add.clicked.connect(self.on_add_clicked)
 
-        layout = QGridLayout()
-        layout.addWidget(QLabel("Name :"), 0, 0)
+        # adding the widgets
+        layout.addWidget(QLabel("Task :"), 0, 0)
         layout.addWidget(self.nameLineEdit, 0, 1)
-        layout.addWidget(QLabel("Date :"), 1, 0)
+        layout.addWidget(QLabel("Date (yyyy-MM-dd) :"), 1, 0)
         layout.addWidget(self.dateLineEdit, 1, 1)
-        layout.addWidget(self.importanceChoice, 2, 0)
-        layout.addWidget(button, 3, 0)
+        layout.addWidget(self.importanceOptions, 2, 0)
+        layout.addWidget(button_add, 3, 0)
 
         self.setLayout(layout)
 
-    def on_button_clicked(self) -> None:
-        name = self.nameLineEdit.text()
-        date = self.dateLineEdit.text()
-        importance = ""
-        match self.importanceChoice.currentText():
+    def on_add_clicked(self) -> None:
+        task = self.nameLineEdit.text()
+        text_date = self.dateLineEdit.text()
+        importance = self.importanceOptions.currentText()
+
+        if len(task) == 0:
+            QMessageBox.warning(self, "Error", "Name can't be empty")
+            return
+
+        try:
+            date = datetime.strptime(text_date, "%Y-%m-%d")
+        except ValueError:
+            QMessageBox.warning(self, "Error", "Invalid date format")
+            return
+
+        match importance:
             case "Not important":
                 importance = "green"
             case "Important":
                 importance = "orange"
             case "Must":
                 importance = "red"
-        self.window.add_task(name, date, importance)
+
+        self.data.add_task(task, date, importance)
+        self.window.on_search()
+
+
+class TaskInfoWindow(QWidget):
+    window: "Window"
+    data: Data
+    _id: int
+
+    def __init__(self, wnd: "Window", data: Data, task: dict) -> None:
+        super().__init__()
+
+        # setting attributes to the window
+        self.setWindowTitle("Task Information")
+        self.setGeometry(250, 250, 300, 300)
+        self._id = task["id"]
+
+        # passing the arguments
+        self.window = wnd
+        self.data = data
+
+        # creating the widgets
+        layout = QGridLayout()
+        task_label = QLabel(f"Task: {task['task']}")
+        date_label = QLabel(f"Date: {task['date'].strftime('%Y-%m-%d')}")
+        button_mark_as_done = QPushButton("Mark as done")
+
+        # connecting the button
+        button_mark_as_done.clicked.connect(self.on_mark_as_done_clicked)
+
+        # adding the widgets
+        layout.addWidget(task_label, 0, 0)
+        layout.addWidget(date_label, 1, 0)
+        layout.addWidget(button_mark_as_done, 2, 0)
+
+        self.setLayout(layout)
+
+    def on_mark_as_done_clicked(self) -> None:
+        self.data.delete_task(self._id)
+        self.window.on_search()
         self.close()
 
 
 class Window(QWidget):
-    data: Data = Data()
-    tasks: list[QFrame] = []
+    data = Data()
     layout: QGridLayout
-    addWindow: AddWindow
+    searchBar: QLineEdit
+    results: list[QPushButton] = []
+    taskInfoWindow: TaskInfoWindow
+    newTaskWindow: NewTaskWindow
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("Task manager")
-        self.setGeometry(250, 300, 600, 600)
 
+        # setting attributes to the window
+        self.setGeometry(300, 300, 500, 500)
+        self.setWindowTitle("Task Manager")
+
+        # creating the widgets
         self.layout = QGridLayout()
-        button = QPushButton("Add task")
-        button.clicked.connect(self.add_clicked)
-        self.layout.addWidget(button, 0, 0)
-        self.render_tasks()
+        button_add = QPushButton("Add")
+        self.searchBar = QLineEdit()
+
+        # connecting the widgets
+        button_add.clicked.connect(self.on_button_add_clicked)
+        self.searchBar.returnPressed.connect(self.on_search)
+
+        # adding the widgets
+        self.layout.addWidget(button_add, 0, 0)
+        self.layout.addWidget(self.searchBar, 1, 0)
+
         self.setLayout(self.layout)
 
-    def render_tasks(self):
-        for task in self.tasks:
-            self.layout.removeWidget(task)
-        self.tasks.clear()
+    def on_button_add_clicked(self) -> None:
+        self.newTaskWindow = NewTaskWindow(self, self.data)
+        self.newTaskWindow.show()
 
-        row = 1
+    def on_search(self) -> None:
+        for result in self.results:
+            self.layout.removeWidget(result)
+        self.results.clear()
+
+        text = self.searchBar.text()
+        row = 2
+
         for task in self.data:
-            task_layout = QGridLayout()
-            task_frame = QFrame()
+            if task["task"].startswith(text):
+                result = QPushButton(task["task"])
+                result.setStyleSheet(f"color:{task['importance']};")
+                self.results.append(result)
 
-            label = QLabel(f"Name : {task['name']} \n Date : {task['date']} ")
-            label.setStyleSheet(f"color : {task['importance']};")
-            button = QPushButton("Delete")
-            button.clicked.connect(partial(self.delete_clicked, task['id']))
+                result.clicked.connect(partial(self.on_result_clicked, task))
 
-            task_layout.addWidget(label, 0, 0)
-            task_layout.addWidget(button, 0, 1)
+                self.layout.addWidget(result, row, 0)
+                row += 1
 
-            task_frame.setLayout(task_layout)
-            self.tasks.append(task_frame)
-            self.layout.addWidget(task_frame, row, 0)
-            row += 1
-
-    def delete_clicked(self, _id: int) -> None:
-        self.data.delete_task(_id)
-        self.render_tasks()
-
-    def add_clicked(self, ) -> None:
-        self.addWindow = AddWindow(self)
-        self.addWindow.show()
-
-    def add_task(self, name: str, date: str, importance: str) -> None:
-        self.data.add_task(name, date, importance)
-        self.render_tasks()
+    def on_result_clicked(self, task: dict) -> None:
+        self.taskInfoWindow = TaskInfoWindow(self, self.data, task)
+        self.taskInfoWindow.show()
 
     def closeEvent(self, event: QCloseEvent) -> None:
-        self.data.write_data()
+        self.data.save_data()
         event.accept()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = Window()
     window.show()
-    sys.exit(app.exec())
+    app.exec()

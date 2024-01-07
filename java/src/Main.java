@@ -1,281 +1,344 @@
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-
 import java.lang.reflect.Type;
-import java.util.ArrayList;
+import java.sql.*;
+import java.sql.Date;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 
-class Task {
-    private final String name;
-    private final String date;
-    private final String importance;
-    private int id;
+record Task(String task, Date date, String importance, int id) { }
 
-    public Task(String name, String date, String importance, int id) {
-        this.name = name;
-        this.date = date;
-        this.importance = importance;
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getDate() {
-        return date;
-    }
-
-    public String getImportance() {
-        return importance;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-}
-
-class Data {
-    private ArrayList<Task> tasks;
+class Data implements Iterable<Task> {
+    private final ArrayList<Task> tasks = new ArrayList<>();
+    private String username;
+    private String password;
 
     public Data() {
+        getLoginInfo();
         readData();
     }
 
-    private void readData() {
-        try (FileReader fileReader = new FileReader("/Users/simonesamardzhiev/Desktop/My projects/Task Manager/java/data.json")) {
+    private void getLoginInfo() {
+        try (FileReader reader = new FileReader("/Users/simonesamardzhiev/Desktop/My projects/Task Manager/java/login_info.json")) {
             Gson gson = new Gson();
-            Type type = new TypeToken<ArrayList<Task>>() {
+            Type type = new TypeToken<HashMap<String, String>>() {
             }.getType();
-            tasks = gson.fromJson(fileReader, type);
+            HashMap<String, String> map = gson.fromJson(reader, type);
+
+            username = map.get("username");
+            password = map.get("password");
         } catch (IOException e) {
-            System.err.println("There was an error in reading the file");
-            System.exit(1);
+            System.err.println("There was an error in reading the login info");
         }
     }
 
-    public void writeData() {
-        reindex();
-        try (FileWriter fileWriter = new FileWriter("/Users/simonesamardzhiev/Desktop/My projects/Task Manager/java/data.json")) {
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            gson.toJson(tasks, fileWriter);
-        } catch (IOException e) {
-            System.err.println("There was an error writing into the file");
-            System.exit(1);
+    private void readData() {
+        String url = "jdbc:mysql://localhost:3306/TaskManager";
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            Connection connection = DriverManager.getConnection(url, username, password);
+            Statement statement = connection.createStatement();
+            String query = "SELECT * FROM JavaData";
+            ResultSet resultSet = statement.executeQuery(query);
+
+            while (resultSet.next()) {
+                String task = resultSet.getString("task");
+                Date date = resultSet.getDate("date");
+                String importance = resultSet.getString("importance");
+                int id = resultSet.getInt("id");
+                tasks.add(new Task(task, date, importance, id));
+            }
+
+            connection.close();
+            statement.close();
+            resultSet.close();
+
+        } catch (Exception e) {
+            System.err.println("There was an error getting data from the database");
+            System.out.println(e.getMessage());
         }
     }
 
-    private void reindex() {
-        for (int i = 0; i < tasks.size(); i++) {
-            tasks.get(i).setId(i);
-        }
-    }
+    public void saveData() {
+        String url = "jdbc:mysql://localhost:3306/TaskManager";
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            Connection connection = DriverManager.getConnection(url, username, password);
+            Statement statement = connection.createStatement();
+            String query = "DELETE FROM JavaData";
+            statement.executeUpdate(query);
 
-    private int getAvailableIndex() {
-        if (tasks.isEmpty()) {
-            return 0;
-        } else {
-            return tasks.getLast().getId() + 1;
-        }
-    }
+            PreparedStatement preparedStatement = connection.prepareStatement("INSERT INTO JavaData(task,date,importance) VALUES (?,?,?)");
 
-    public void addTask(String name, String date, String importance) {
-        tasks.add(new Task(name, date, importance, getAvailableIndex()));
+            for (Task task : tasks) {
+                preparedStatement.setString(1, task.task());
+                preparedStatement.setDate(2, task.date());
+                preparedStatement.setString(3, task.importance());
+
+                preparedStatement.executeUpdate();
+            }
+
+            connection.close();
+            statement.close();
+            preparedStatement.close();
+
+        } catch (Exception e) {
+            System.err.println("There was an error saving data in the database");
+            System.out.println(e.getMessage());
+        }
     }
 
     public void deleteTask(int id) {
         for (Task task : tasks) {
-            if (task.getId() == id) {
+            if (task.id() == id) {
                 tasks.remove(task);
                 break;
             }
         }
     }
 
-    ArrayList<Task> getTasks() {
-        return tasks;
+    public void addTask(String task, Date date, String importance) {
+        tasks.add(new Task(task, date, importance, getNewId()));
+    }
+
+    private int getNewId() {
+        if (tasks.isEmpty()) {
+            return 0;
+        } else {
+            return tasks.getLast().id() + 1;
+        }
+    }
+
+    @Override
+    public Iterator<Task> iterator() {
+        return tasks.iterator();
+    }
+
+}
+
+class NewTaskWindow extends JFrame {
+    private final Window window;
+    private final Data data;
+
+    private final JTextField taskTextField;
+
+    private final JTextField dateTextField;
+    private final JComboBox<String> importanceOptions;
+
+    public NewTaskWindow(Window window, Data data) {
+        super();
+
+        // setting the attributes to the window
+        this.setSize(300, 300);
+        this.setTitle("New Task");
+        this.setLayout(new GridBagLayout());
+
+        // passing the arguments
+        this.window = window;
+        this.data = data;
+
+        // creating the widgets
+        GridBagConstraints layout = new GridBagConstraints();
+        taskTextField = new JTextField();
+        dateTextField = new JTextField();
+        importanceOptions = new JComboBox<>();
+        JButton addTaskButton = new JButton("Add task");
+
+        // setting attributes and connecting the widgets
+        taskTextField.setPreferredSize(new Dimension(150, 25));
+        dateTextField.setPreferredSize(new Dimension(150, 25));
+        importanceOptions.addItem("Not important");
+        importanceOptions.addItem("Important");
+        importanceOptions.addItem("Must");
+        addTaskButton.addActionListener(e -> NewTaskWindow.this.onAddTaskCLicked());
+
+        // adding the widgets
+        layout.gridx = 0;
+        layout.gridy = 0;
+        this.add(new JLabel("Task :"), layout);
+
+        layout.gridx = 1;
+        this.add(taskTextField, layout);
+
+        layout.gridx = 0;
+        layout.gridy = 1;
+        this.add(new JLabel("Date (yyyy-MM-dd) :"), layout);
+
+        layout.gridx = 1;
+        this.add(dateTextField, layout);
+
+        layout.gridx = 0;
+        layout.gridy = 2;
+        this.add(importanceOptions, layout);
+
+        layout.gridy = 3;
+        this.add(addTaskButton, layout);
+
+        this.setVisible(true);
+    }
+
+    private void onAddTaskCLicked() {
+        String task = taskTextField.getText();
+        String dateText = dateTextField.getText();
+        String importance = "";
+        java.util.Date date;
+
+        importance = switch ((String) Objects.requireNonNull(importanceOptions.getSelectedItem())) {
+            case "Not important" -> "green";
+            case "Important" -> "orange";
+            case "Must" -> "red";
+            default -> importance;
+        };
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+        try {
+            date = dateFormat.parse(dateText);
+        } catch (ParseException e) {
+            JOptionPane.showMessageDialog(this, "The value in the data in invalid !");
+            dateTextField.setText("");
+            return;
+        }
+
+        data.addTask(task,new java.sql.Date(date.getTime()),importance);
+        window.onSearch();
     }
 }
 
-class AddTaskWindow extends JFrame {
-    private final JTextField textName = new JTextField();
-    private final JTextField textDate = new JTextField();
+class TaskWindow extends JFrame {
+    private final Window window;
+    private final Data data;
 
-    private final JComboBox<String> importance = new JComboBox<>();
-    private Window window;
+    private final int id;
 
-    public AddTaskWindow(Window window) {
+    public TaskWindow(Window window, Data data, Task task) {
         super();
-        this.setTitle("Add new task");
+
+        // setting attributes to the window
         this.setSize(300, 300);
+        this.setTitle("Task info");
         this.setLayout(new GridBagLayout());
 
+        // passing teh arguments
         this.window = window;
+        this.data = data;
+        this.id = task.id();
 
-        importance.addItem("Not important");
-        importance.addItem("Important");
-        importance.addItem("Must");
-
-        textName.setPreferredSize(new Dimension(100, 30));
-        textDate.setPreferredSize(new Dimension(100, 30));
-
+        // creating the widgets
         GridBagConstraints layout = new GridBagConstraints();
+        JLabel labelTask = new JLabel(String.format("Task : %s", task.task()));
+        JLabel labelDate = new JLabel(String.format("Date : %s", task.date().toString()));
+        JButton markAsDoneButton = new JButton("Mark as done");
+
+        // connecting the button
+        markAsDoneButton.addActionListener(e -> TaskWindow.this.onMarkAsDoneClicked());
+
+        // adding the widgets
         layout.gridx = 0;
         layout.gridy = 0;
-        this.add(new JLabel("Enter the name :"), layout);
-
-        layout.gridx = 1;
-        this.add(textName, layout);
+        this.add(labelTask, layout);
 
         layout.gridy = 1;
-        layout.gridx = 0;
-        this.add(new JLabel("Enter the date :"), layout);
-
-        layout.gridx = 1;
-        this.add(textDate, layout);
+        this.add(labelDate, layout);
 
         layout.gridy = 2;
-        layout.gridx = 0;
-        this.add(importance, layout);
-
-        JButton button = new JButton("Add");
-        button.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-                String name = AddTaskWindow.this.textName.getText();
-                String date = AddTaskWindow.this.textDate.getText();
-                String importance = "";
-                switch ((String) (AddTaskWindow.this.importance.getSelectedItem())) {
-                    case "Not important":
-                        importance = "green";
-                        break;
-                    case "Important":
-                        importance = "orange";
-                        break;
-                    case "Must":
-                        importance = "red";
-                }
-                AddTaskWindow.this.window.addTask(name, date, importance);
-                AddTaskWindow.this.dispose();
-            }
-        });
-
-        layout.gridy = 3;
-        this.add(button, layout);
+        this.add(markAsDoneButton, layout);
 
         this.setVisible(true);
+    }
+
+    private void onMarkAsDoneClicked() {
+        data.deleteTask(id);
+        window.onSearch();
+        this.dispose();
     }
 }
 
 class Window extends JFrame {
-    private final ArrayList<JPanel> tasks = new ArrayList<>();
     private final Data data = new Data();
-    private final JButton addButton = new JButton("Add task");
+    private final JTextField searchBar;
+    private final ArrayList<JButton> results = new ArrayList<>();
 
     public Window() {
         super();
 
+        // setting attributes to the window
+        this.setSize(500, 500);
         this.setTitle("Task manager");
-        this.setSize(600, 600);
         this.setLayout(new GridBagLayout());
-
         this.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                Window.this.data.writeData();
+                data.saveData();
                 System.exit(0);
             }
         });
 
+        // creating the widgets
         GridBagConstraints layout = new GridBagConstraints();
-        layout.gridx = 0;
-        layout.gridy = 0;
+        JButton addButton = new JButton("Add task");
+        searchBar = new JTextField();
 
+        // setting attributes and connecting the widgets
+        searchBar.setPreferredSize(new Dimension(150, 25));
+        searchBar.addActionListener(e -> Window.this.onSearch());
+        addButton.addActionListener(e -> new NewTaskWindow(Window.this, Window.this.data));
 
-        addButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-                new AddTaskWindow(Window.this);
-            }
-        });
-        this.add(addButton, layout);
-
-        renderTasks();
-    }
-
-    void renderTasks() {
-        this.getContentPane().removeAll();
-        tasks.clear();
-
-        GridBagConstraints layout = new GridBagConstraints();
+        // adding the widgets
         layout.gridx = 0;
         layout.gridy = 0;
         this.add(addButton, layout);
 
         layout.gridy = 1;
+        this.add(searchBar, layout);
 
-        for (Task task : data.getTasks()) {
-            JPanel panel = new JPanel();
-            panel.setLayout(new GridBagLayout());
+    }
 
-            GridBagConstraints layoutPanel = new GridBagConstraints();
-            layoutPanel.gridx = 0;
-            layoutPanel.gridy = 0;
-
-            JLabel label = new JLabel(String.format("<html>Name : %s <br> Date : %s</html>", task.getName(), task.getDate()));
-            switch (task.getImportance()) {
-                case "green":
-                    label.setForeground(Color.green);
-                    break;
-                case "orange":
-                    label.setForeground(Color.orange);
-                    break;
-                case "red":
-                    label.setForeground(Color.red);
-            }
-            JButton button = new JButton("Delete");
-            final int finalId = task.getId();
-            button.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent actionEvent) {
-                    Window.this.delete_pressed(finalId);
-                }
-            });
-
-            panel.add(label, layoutPanel);
-            layoutPanel.gridx++;
-            panel.add(button, layoutPanel);
-
-            this.add(panel, layout);
-            layout.gridy++;
+    public void onSearch() {
+        for (JButton result : results) {
+            this.getContentPane().remove(result);
         }
-        this.getContentPane().repaint();
-        this.getContentPane().revalidate();
-    }
+        results.clear();
 
-    private void delete_pressed(int id) {
-        data.deleteTask(id);
-        renderTasks();
-    }
+        String text = searchBar.getText();
+        GridBagConstraints layout = new GridBagConstraints();
+        layout.gridx = 0;
+        layout.gridy = 2;
 
-    public void addTask(String name, String date, String importance) {
-        data.addTask(name, date, importance);
-        renderTasks();
+        for (Task task : data) {
+            if (task.task().startsWith(text)) {
+                JButton result = new JButton(task.task());
+                switch (task.importance()) {
+                    case "green":
+                        result.setForeground(Color.green);
+                        break;
+                    case "orange":
+                        result.setForeground(Color.orange);
+                        break;
+                    case "red":
+                        result.setForeground(Color.red);
+                        break;
+                }
+                results.add(result);
+
+                result.addActionListener(e -> new TaskWindow(Window.this, Window.this.data, task));
+
+                this.add(result, layout);
+                layout.gridy++;
+            }
+        }
+
+        this.repaint();
+        this.revalidate();
     }
 }
 
